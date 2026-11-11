@@ -1,0 +1,37 @@
+services:
+  postgres_db:
+    image: postgres:16-alpine
+    container_name: gestor-tareas-db
+    environment:
+      POSTGRES_USER: usuario_db
+      POSTGRES_PASSWORD: clave_secreta
+      POSTGRES_DB: tareas_db
+    volumes:
+      - tareas_data:/var/lib/postgresql/data
+    networks:
+      - red_backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U usuario_db -d tareas_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend_api:
+    build: .
+    container_name: gestor-tareas-api
+    environment:
+      DATABASE_URL: postgresql://usuario_db:clave_secreta@postgres_db:5432/tareas_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    networks:
+      - red_backend
+
+networks:
+  red_backend:
+    driver: bridge
+
+volumes:
+  tareas_data:
